@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 pub struct Job {
     id: usize,
     iteration: usize,
@@ -8,6 +10,8 @@ pub struct Job {
     status: JobStatus,
 }
 
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "kebab-case")]
 enum JobStatus {
     Ready,
     Running,
@@ -108,7 +112,51 @@ impl JobList {
         }
         self.jobs = finished_jobs;
     }
+}
 
+#[derive(Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct JobReport {
+    id: usize,
+    iteration: usize,
+    arrival_time: usize,
+    deadline: usize,
+    start_time: usize,
+    finish_time: usize,
+    remaining: usize,
+    wcet: usize,
+    log: Vec<(usize, usize)>,
+    status: JobStatus,
+}
+
+impl From<&Job> for JobReport {
+    fn from(job: &Job) -> Self {
+        let wcet = job.log.iter().map(|(s, e)| e - s).sum::<usize>() + job.remaining;
+        let start_time = job.log.first().unwrap_or(&(0, 0)).0;
+        let finish_time = job.log.last().unwrap_or(&(0, 0)).1;
+        Self {
+            id: job.id,
+            iteration: job.iteration,
+            arrival_time: job.arrival_time,
+            deadline: job.deadline,
+            start_time,
+            finish_time,
+            remaining: job.remaining,
+            wcet,
+            log: job.log.clone(),
+            status: job.status.clone(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Report {
+    jobs: Vec<JobReport>,
+    timeline: Vec<(usize, usize)>,
+}
+
+impl JobList {
     pub fn timeline(&self, to: usize) -> Vec<(usize, usize)> {
         let mut timeline = vec![(0, 0); to];
         for job in self.jobs.iter() {
@@ -119,6 +167,17 @@ impl JobList {
             }
         }
         timeline
+    }
+
+    pub fn report(&self, to: usize) -> Report {
+        Report {
+            jobs: self
+                .jobs
+                .iter()
+                .map(|j| JobReport::from(j.clone()))
+                .collect(),
+            timeline: self.timeline(to),
+        }
     }
 }
 
@@ -137,10 +196,30 @@ mod tests {
             .join(t2.jobs_till(24))
             .join(t3.jobs_till(24));
         let timeline = vec![
-            (1, 0), (1, 0), (2, 0), (2, 0), (3, 0), (3, 0),
-            (3, 0), (1, 1), (1, 1), (2, 1), (2, 1), (0, 0),
-            (1, 2), (1, 2), (3, 1), (3, 1), (3, 1), (0, 0),
-            (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0),
+            (1, 0),
+            (1, 0),
+            (2, 0),
+            (2, 0),
+            (3, 0),
+            (3, 0),
+            (3, 0),
+            (1, 1),
+            (1, 1),
+            (2, 1),
+            (2, 1),
+            (0, 0),
+            (1, 2),
+            (1, 2),
+            (3, 1),
+            (3, 1),
+            (3, 1),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
         ];
 
         jobs.schedule();
@@ -157,10 +236,30 @@ mod tests {
             .join(t2.jobs_till(24))
             .join(t3.jobs_till(24));
         let timeline = vec![
-            (1, 0), (2, 0), (3, 0), (1, 1), (3, 0), (2, 1),
-            (1, 2), (0, 0), (2, 2), (1, 3), (3, 1), (3, 1),
-            (1, 4), (2, 3), (0, 0), (1, 5), (2, 4), (3, 2),
-            (1, 6), (3, 2), (2, 5), (0, 0), (0, 0), (0, 0),
+            (1, 0),
+            (2, 0),
+            (3, 0),
+            (1, 1),
+            (3, 0),
+            (2, 1),
+            (1, 2),
+            (0, 0),
+            (2, 2),
+            (1, 3),
+            (3, 1),
+            (3, 1),
+            (1, 4),
+            (2, 3),
+            (0, 0),
+            (1, 5),
+            (2, 4),
+            (3, 2),
+            (1, 6),
+            (3, 2),
+            (2, 5),
+            (0, 0),
+            (0, 0),
+            (0, 0),
         ];
 
         jobs.schedule();

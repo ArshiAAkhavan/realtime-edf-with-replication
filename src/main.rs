@@ -1,9 +1,12 @@
+use std::path::PathBuf;
+
 use clap::{Parser, ValueEnum};
 use rand::seq::SliceRandom;
 
 use scheduling::uunifast;
 use scheduling::Task;
 use scheduling::TaskList;
+use serde_json::json;
 
 #[derive(ValueEnum, Debug, Clone)]
 #[clap(rename_all = "kebab_case")]
@@ -34,9 +37,13 @@ struct Cli {
     /// replicaton factor of 0 means there is only 1 instance of each task
     #[arg(short, long)]
     replication_factor: usize,
+
+    /// path to output file
+    #[arg(short, long)]
+    output_path: PathBuf,
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let periods = vec![10, 20, 30, 40, 50, 60];
     let mut rng = rand::thread_rng();
 
@@ -55,9 +62,15 @@ fn main() {
         DispatchAlgorithm::WorstFit => tasklist.worst_fit(cli.num_cpu),
     }
     .unwrap();
-    for tasklist in dispatched_list {
+    let mut reports = Vec::new();
+    for (i, tasklist) in dispatched_list.iter().enumerate() {
         let mut joblist = tasklist.jobs_till_hyperperiod();
         joblist.schedule();
-        println!("{:?}", joblist.timeline(tasklist.hyperperiod()))
+        reports.push(json!({
+            "cpu": i,
+            "report": joblist.report(tasklist.hyperperiod()),
+        }));
     }
+    let json_string = serde_json::to_string_pretty(&reports).unwrap();
+    std::fs::write(cli.output_path, json_string)
 }
