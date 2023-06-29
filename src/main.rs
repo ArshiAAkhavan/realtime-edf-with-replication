@@ -38,19 +38,23 @@ struct Cli {
     #[arg(short, long)]
     replication_factor: usize,
 
+    /// total utilization of the generated tasks.
+    #[arg(short, long)]
+    utilization: f32,
+
     /// path to output file
     #[arg(short, long)]
     output_path: PathBuf,
 }
 
 fn main() -> std::io::Result<()> {
-    let periods = vec![10, 20, 30, 40, 50, 60];
+    let periods = vec![100, 200, 300, 400, 500, 600];
     let mut rng = rand::thread_rng();
 
     let cli = Cli::parse();
 
     let mut tasks = Vec::with_capacity(cli.num_tasks);
-    for (id, utilization) in uunifast(cli.num_tasks, 0.9).iter().enumerate() {
+    for (id, utilization) in uunifast(cli.num_tasks, cli.utilization).iter().enumerate() {
         let period = periods.choose(&mut rng).unwrap();
         let wcet = ((*period as f32) * utilization) as usize;
         tasks.push(Task::new(id, wcet, *period))
@@ -60,8 +64,11 @@ fn main() -> std::io::Result<()> {
         DispatchAlgorithm::FirstFit => tasklist.first_fit(cli.num_cpu),
         DispatchAlgorithm::BestFit => tasklist.best_fit(cli.num_cpu),
         DispatchAlgorithm::WorstFit => tasklist.worst_fit(cli.num_cpu),
-    }
-    .unwrap();
+    };
+    let dispatched_list = match dispatched_list {
+        Ok(tasks) => tasks,
+        Err(_) => panic!("couldn't dispatch jobs into CPUs"),
+    };
     let mut reports = Vec::new();
     for (i, tasklist) in dispatched_list.iter().enumerate() {
         let mut joblist = tasklist.jobs_till_hyperperiod();
