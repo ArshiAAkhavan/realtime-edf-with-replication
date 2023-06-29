@@ -95,8 +95,7 @@ impl TaskList {
         self.tasks
             .iter()
             .map(|t| t.period)
-            .reduce(num::integer::lcm)
-            .unwrap()
+            .fold(1, num::integer::lcm)
     }
 
     pub fn jobs_till_hyperperiod(&self) -> JobList {
