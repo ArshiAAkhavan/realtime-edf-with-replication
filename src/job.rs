@@ -16,7 +16,13 @@ enum JobStatus {
 }
 
 impl Job {
-    pub fn new(id: usize, iteration: usize, arrival_time: usize, wcet: usize, deadline: usize) -> Self {
+    pub fn new(
+        id: usize,
+        iteration: usize,
+        arrival_time: usize,
+        wcet: usize,
+        deadline: usize,
+    ) -> Self {
         Self {
             id,
             iteration,
@@ -59,7 +65,7 @@ impl JobList {
     pub fn push(&mut self, job: Job) {
         self.jobs.push(job);
     }
-    
+
     pub fn pop(&mut self) -> Option<Job> {
         self.jobs.pop()
     }
@@ -102,7 +108,7 @@ impl JobList {
         }
         self.jobs = finished_jobs;
     }
-    
+
     pub fn timeline(&self, to: usize) -> Vec<(usize, usize)> {
         let mut timeline = vec![(0, 0); to];
         for job in self.jobs.iter() {
