@@ -21,7 +21,6 @@ enum DispatchAlgorithm {
 #[clap(rename_all = "kebab_case")]
 struct Cli {
     /// which dispatch algorithm to choose
-    /// options are: FirstFit, WorstFit, and BestFit
     #[arg(short, long, value_enum,default_value_t=DispatchAlgorithm::FirstFit)]
     dispatch_algorithm: DispatchAlgorithm,
 
